@@ -1,29 +1,29 @@
 <?php
 namespace Fuel\Migrations; 
-class Contienen
+class Follow
 {
     function up()
     {
-        \DBUtil::create_table('contienen', array(
-            'id_list' => array('type' => 'int', 'constraint' => 5),
-            'id_song' => array('type' => 'int', 'constraint' => 5),
-        ), array('id_list','id_song'), false, 'InnoDB', 'utf8_unicode_ci',
+        \DBUtil::create_table('follow', array(
+            'id_user' => array('type' => 'int', 'constraint' => 5),
+            'id_user2' => array('type' => 'int', 'constraint' => 5),
+        ), array('id_user','id_user2'), false, 'InnoDB', 'utf8_unicode_ci',
             array(
                 array(
-                    'constraint' => 'claveAjenacontienenAlistas',
-                    'key' => 'id_list',
+                    'constraint' => 'claveAjenafollowAusers',
+                    'key' => 'id_user',
                     'reference' => array(
-                        'table' => 'lists',
+                        'table' => 'users',
                         'column' => 'id',
                     ),
                     'on_update' => 'CASCADE',
                     'on_delete' => 'CASCADE'
                 ),
                 array(
-                    'constraint' => 'claveAjenacontienenACanciones',
-                    'key' => 'id_song',
+                    'constraint' => 'claveAjenafollowAusers2',
+                    'key' => 'id_user2',
                     'reference' => array(
-                        'table' => 'songs',
+                        'table' => 'users',
                         'column' => 'id',
                     ),
                     'on_update' => 'CASCADE',
@@ -34,6 +34,6 @@ class Contienen
     }
     function down()
     {
-       \DBUtil::drop_table('contienen');
+       \DBUtil::drop_table('follow');
     }
 }
