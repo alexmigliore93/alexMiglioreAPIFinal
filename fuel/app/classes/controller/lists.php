@@ -283,7 +283,103 @@ class Controller_Lists extends Controller_Rest
         }
     }
 
-    
+    public function post_update()
+    {
+        // valdiar token
+        $token = apache_request_headers()['Authorization'];
+        $data = $this->decodeToken($token);
+        // si el token es correcto
+        if ($this->validateToken($token)) 
+        {
+            // si no nos envian los parametros
+            if (! isset($_POST['id']) || ! isset($_POST['title']) ) 
+            {
+                $json = $this->response(array(
+                    'code' => 400,
+                    'message' => 'Parametro incorrecto, se necesita que el parametro se llame id, title',
+                    'data' => ''
+                    )
+                );
+                return $json;
+            }
+            
+            $input = $_POST;
+            // si los parametros estan vacios
+            if ($input['id'] == '' ||  $input['title'] == '') 
+            {
+                $json = $this->response(array(
+                    'code' => 400,
+                    'message' => 'Error algun campo esta vacio',
+                    'data' => array(
+                                'id' =>$input['id'],
+                                'title' =>$input['title']
+                        )
+                    )
+                );
+                return $json;
+            }
+            try
+            {
+                $list = Model_Lists::find($input['id']);
+                if ($list != null) {
+                    // si la lista es del usuario logeado
+                    if ($list->id_user == $data->data->id) 
+                    {
+                        $list = Model_Lists::find($input['id']);
+                        $list->title = $input['title'];
+                        $title = $input['title'];
+                        $list->save();
+                        $json = $this->response(array(
+                            'code' => 200,
+                            'message' => 'Lista guardada: ',
+                            'data' => array('title'=>$title
+                                )
+                            )
+                        );
+                        return $json;
+                    }
+                    else
+                    {
+                        $json = $this->response(array(
+                            'code' => 400,
+                            'message' => 'Error la lista no pertenece al usuario logeado',
+                            'data' => ''
+                            )
+                        );
+                        return $json;
+                    }
+                }
+                else
+                {
+                    $json = $this->response(array(
+                            'code' => 400,
+                            'message' => 'Error la lista no existe',
+                            'data' => ''
+                            )
+                        );
+                        return $json;
+                }
+            }
+            catch(Exception $e)
+            {
+                $json = $this->response(array(
+                    'code' => 500,
+                    'message' => 'error interno del servidor',
+                    'data' => $e->getMessage()
+                    )
+                );
+                return $json;
+            }
+        }else{
+            $json = $this->response(array(
+                    'code' => 400,
+                    'message' => 'Fallo de autentificacion',
+                    'data' => ''
+                    )
+                );
+                return $json;
+        }
+    }
 
     public static function decodeToken($jwt)
     {

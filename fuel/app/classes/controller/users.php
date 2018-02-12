@@ -155,6 +155,32 @@ class Controller_Users extends Controller_Rest
             return $json;
         }
     }
+
+    public function get_users()
+    {
+        // recibir token del header y validar
+        $token = apache_request_headers()['Authorization'];
+        // si el token es correcto
+        if ($this->validateToken($token)) 
+        {
+            $users = Model_Users::find('all');
+            $json = $this->response(array(
+                'code' => 200,
+                'message' => 'Listado usuarios',
+                'data' => Arr::reindex($users)
+            ));
+            return $json;
+        }else{
+            $json = $this->response(array(
+                    'code' => 400,
+                    'message' => 'Fallo de autentificacion',
+                    'data' => ''
+                    )
+                );
+            return $json;
+        }
+    }
+
     
     private function validateToken ($token)
     {
