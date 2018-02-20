@@ -16,7 +16,7 @@ class Controller_Songs extends Controller_Rest
                 {
                     $json = $this->response(array(
                         'code' => 400,
-                        'message' => 'Parametro incorrecto, se necesita que el parametro se llame title, url, artist, album, date',
+                        'message' => 'Parametro incorrecto, se necesita que el parametro se llame title, url, artist',
                         'data' => ''
                         )
                     );
@@ -70,6 +70,85 @@ class Controller_Songs extends Controller_Rest
         }
     }
 
+     public function post_update()
+    {
+        $token = apache_request_headers()['Authorization'];
+        $data = $this->decodeToken($token);
+        // si el token es correcto
+        if ($this->validateToken($token)) 
+        {
+            
+            try{
+                $input = $_POST;
+                if ($input['id'] != "" && isset($input['id'])) {
+                    $song = Model_Songs::find($input['id']);
+                    if ($song == null) {
+                            $json = $this->response(array(
+                            'code' => 400,
+                            'message' => 'Error la cancion no existe',
+                            'data' => Array(
+                                'id'=>$input['id']
+                                ))
+                            );
+                        return $json;
+                    }
+                    else
+                    {
+                        if (isset($input['title']) && $input['title'] != '') {
+                            $song->title = $input['title'];
+                        }
+                        if (isset($input['url']) && $input['url'] != '') {
+                            $song->url = $input['url'];
+                        }
+                        if (isset($input['artist']) && $input['artist'] != '') {
+                            $song->artist = $input['artist'];
+                        }
+                    }
+                    $title = $song->title;
+                    $song->save();
+                    $json = $this->response(array(
+                    'code' => 200,
+                    'message' => 'cancion guardada',
+                    'data' => Array(
+                                'titulo' => $title
+                    ))
+                    );
+                    return $json;
+                }
+                else
+                {
+                    $json = $this->response(array(
+                    'code' => 400,
+                    'message' => 'Error falta el id de la cancion',
+                    'data' => ''
+                        )
+                    );
+                    return $json;
+                }
+            }
+            catch(Exception $e)
+            {
+                $json = $this->response(array(
+                    'code' => 500,
+                    'message' => 'error interno del servidor',
+                    'data' => $e->getMessage()
+                    )
+                );
+                return $json;
+            }
+        }
+        else
+        {
+            $json = $this->response(array(
+                    'code' => 400,
+                    'message' => 'Fallo de autentificacion',
+                    'data' => ''
+                    )
+                );
+            return $json;
+        }
+    }
+
     public function get_songs()
     {
         $token = apache_request_headers()['Authorization'];
@@ -81,11 +160,9 @@ class Controller_Songs extends Controller_Rest
                 $songs = Model_Songs::find('all');
                 $json = $this->response(array(
                     'code' => 200,
-                    'message' => 'Listado de canciones',
-                    'data' => Array(
-                        'songs'=>Arr::reindex($songs)
-                        ) 
-                ));
+                    'message' => 'Listado usuarios',
+                    'data' => Arr::reindex($songs)
+                    ));
                 return $json;
             }
             catch(Exception $e)

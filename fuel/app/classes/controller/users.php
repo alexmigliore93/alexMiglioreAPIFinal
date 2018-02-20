@@ -3,7 +3,8 @@ use Firebase\JWT\JWT;
 class Controller_Users extends Controller_Rest
 {
 
-     // Funcion para crear Usuario
+    private $key = 'my_secret_key';
+    protected $format = 'json';
 
     public function post_create()
     {
@@ -53,59 +54,36 @@ class Controller_Users extends Controller_Rest
 
     public function get_login()
     {
-        // Se comprueba que no falten parametros
-        if (! isset($_GET['username']) OR ! isset($_GET['password'])) 
-        {
-            // Aqui mandamos el mensaje por parametros
-            $json = $this->response(array(
-                'code' => 400,
-                'message' => 'Parametro incorrecto, se necesita que el parametro se llame username, password y email',
-                'data' => ''
-                )
-            );
-            return $json;
+        $username = $_GET['username'];
+        $password = $_GET['password'];
+        if(!empty($username) && !empty($password)){
+            $BDuser = Model_Users::find('first', array(
+             'where' => array(
+                 array('username', $username),
+                 array('password', $password)
+                 ),
+             ));
+
+            if(count($BDuser) == 1){
+             $time = time();
+             $token = array(
+                'iat' => $time,
+                'data' => [ // información del usuario
+                'id' => $BDuser->id,
+                'username' => $username,
+                'password'=> $password
+                ]
+                );
+
+             $jwt = JWT::encode($token, $this->key);
+             $this->Mensaje('200', 'usuario logueado', $jwt);
+         } else {
+            $this->Mensaje('400', 'usuario o contraseña incorrectos', $username);
         }
-
-            //Creo un objeto del tipo model_users  y busco un usuario con el username y password dados
-
-
-        $entry = Model_Users::find('all',array(
-                'where' => array(
-                     array('username', $_GET['username']),
-                     array('password', $_GET['password'])
-                    
-            
-                )
-            )
-        );
-      
-      
-      //  return $this->response(array($entry));
-        // Si encuentra el usuario : 
-        if ($entry != null) {
-
-            // reiniciar los indices del array (el indice del usuario que devuelve es el id, por eso los reiniciamos)
-
-            $entry=Arr::reindex($entry);
-            $json = $this->response(array(
-                'code' => 200,
-                'message' => 'Login correcto',
-                'data' => array('token'=>$this->createToken($entry[0]->id,$entry[0]->username,$entry[0]->password,60))
-                )
-            );
-            return $json;
-        }
-        // si no entuentra un usuario con esos datos
-        else 
-        {
-            $json = $this->response(array(
-                'code' => 400,
-                'message' => 'El usuario o contraseñas son incorrectas',
-                'data' => ''
-            ));
-            return $json;
-        }
+    }else {
+        $this->Mensaje('400', 'parametros vacios', $username);
     }
+}
 
     public function post_update()
     {
@@ -155,6 +133,54 @@ class Controller_Users extends Controller_Rest
             return $json;
         }
     }
+
+    public function post_modifyUserAdmin(){
+
+    $jwt = apache_request_headers()['Authorization'];
+
+    try{
+
+        if(!empty($jwt)){
+
+            $tokenDecode = JWT::decode($jwt, $this->key , array('HS256'));
+            
+            $username = $tokenDecode->data->username;
+            $password = $tokenDecode->data->password;
+
+            $id = $_POST["id"];
+
+            $input = $_POST;
+
+        $BDuser = Model_Users::find('first', array(
+            'where' => array(
+                array('username', $username),
+                array('password', $password)
+                ),
+            ));
+        $BDuser2 = Model_Users::find('first', array(
+            'where' => array(
+                array('id', $id)
+                ),
+            ));
+
+        if($BDuser != null){
+            if ($BDuser2 != null) {
+               
+                $BDuser2->username = $input['username'];
+                $BDuser2->password = $input['password'];
+                $BDuser2->save();
+                $this->Mensaje('200', 'usuario modificado', $id);
+            } 
+          }
+        }
+            else {
+            $this->Mensaje('400', 'usuario invalido', $id);
+         
+        }
+    } catch(Exception $e) {
+        $this->Mensaje('500', 'Error de verificacion', "aprender a programar");
+    } 
+}
 
     public function get_users()
     {
@@ -242,6 +268,35 @@ class Controller_Users extends Controller_Rest
         return $json;
     }
 
+    public function post_deleteUser(){
+    $jwt = apache_request_headers()['Authorization'];
+    //print($_POST["id"]);
+    try{
+        if(!empty($jwt)){
+
+            $id = $_POST["id"];
+            
+            $BDuser = Model_Users::find('first', array(
+                'where' => array(
+                    array('id', $id)
+                    ),
+                ));
+            if($BDuser != null){
+
+                $BDuser->delete();
+
+                $this->Mensaje('200', 'usuario borrado', $BDuser);
+            } else {
+                $this->Mensaje('400', 'usuario invalido', $input['username']);
+            }
+        } else {
+            $this->Mensaje('400', 'token vacio', $jwt);
+        }
+    }catch(Exception $e) {
+        $this->Mensaje('500', 'Error de verificacion', "aprender a programar");
+    } 
+}
+
     function post_delete()
     {
         try{
@@ -267,5 +322,15 @@ class Controller_Users extends Controller_Rest
             return $this->createResponse(500, $e->getMessage());
         }  
     }
+
+    function Mensaje($code, $message, $data){
+    $json = $this->response(array(
+        'code' => $code,
+        'message' => $message,
+        'data' => $data
+        ));
+    return $json;
+    }
+
 }
   
